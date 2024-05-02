@@ -56,7 +56,7 @@ export class BowlingGame {
 	}
 
 	private isSpareFrame(frameIndex: number) {
-		return this.sumOfPinsInFrame(frameIndex) === 10;
+		return this.sumOfPinsInFrame(frameIndex) === this.maxScorePerFrame;
 	}
 
 	private spareBonus(frameIndex: number) {
@@ -68,7 +68,6 @@ export class BowlingGame {
 	}
 
 	private frames() {
-		const numberOfFrames = 10;
-		return Array.from({ length: numberOfFrames }).map((_, i) => i);
+		return Array.from({ length: this.maxScorePerFrame }).map((_, i) => i);
 	}
 }
