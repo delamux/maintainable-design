@@ -7,29 +7,41 @@ export class TemplateEngine {
 		private readonly variables: Map<string, string>
 	) {}
 
-	parseNew(): ParsedTemplate {
-		let parsedText = this.templateText;
-		const warnings: TemplateWarning[] = [];
+	parse(): ParsedTemplate {
 		if (this.variables == null) {
-			warnings.push(new TemplateWarning('Variables is not defined'));
-			return ParsedTemplate.create(parsedText, warnings);
+			return this.templateWithWarningsAboutNonDefinedVariables();
 		}
 
+		const parsedTemplate = this.templateWithReplacedVariables();
+
+		return this.addWarningsAboutNonReplacedVariables(parsedTemplate);
+	}
+
+	private templateWithWarningsAboutNonDefinedVariables() {
+		return ParsedTemplate.create(this.templateText, [new TemplateWarning('Variables is not defined')]);
+	}
+
+	private templateWithReplacedVariables() {
+		let parsedText = this.templateText;
+		const warnings: TemplateWarning[] = [];
+
 		this.variables.forEach((value, key) => {
-			const variable = `\$\{${key}\}`;
+			const variable = this.variableTemplate(key);
 			if (!parsedText.includes(variable)) {
 				warnings.push(new TemplateWarning(`Variable ${key} not found`));
 			}
 			parsedText = parsedText.replace(variable, value);
 		});
 
-		const parsedTemplate = ParsedTemplate.create(parsedText, warnings);
+		return ParsedTemplate.create(parsedText, warnings);
+	}
 
-		return this.addWarningsAboutNonReplacedVariables(parsedTemplate);
+	private variableTemplate(key: string) {
+		return `\$\{${key}\}`;
 	}
 
 	private addWarningsAboutNonReplacedVariables(parsedTemplate: ParsedTemplate) {
-		const nonReplacedVariablesRegex = /\$\{[a-zA-Z0-9]+\}/g;
+		const nonReplacedVariablesRegex = this.nonReplacedVariableTemplate();
 
 		const matches = parsedTemplate.text.match(nonReplacedVariablesRegex);
 		if (!matches) {
@@ -44,5 +56,9 @@ export class TemplateEngine {
 		});
 
 		return parsedTemplate.addWarnings(warnings);
+	}
+
+	private nonReplacedVariableTemplate() {
+		return /\$\{[a-zA-Z0-9]+\}/g;
 	}
 }
