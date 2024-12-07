@@ -17,17 +17,36 @@ class TemplateEngine {
 	) {}
 	parseNew(): ParsedTemplate {
 		let parsedText = this.templateText;
+		const warnings: TemplateWarning[] = [];
 		this.variables.forEach((value, key) => {
-			const regex = `\$\{${key}\}`;
-			parsedText = parsedText.replace(regex, value);
+			const variable = `\$\{${key}\}`;
+			if (!parsedText.includes(variable)) {
+				warnings.push(new TemplateWarning(`Variable ${key} not found`));
+			}
+			parsedText = parsedText.replace(variable, value);
 		});
 
-		return new ParsedTemplate(parsedText, []);
+		const parsedTemplate = new ParsedTemplate(parsedText, warnings);
+		const nonReplacedVariablesRegex = /\$\{[a-zA-Z0-9]+\}/g;
+
+		const matches = parsedTemplate.text.match(nonReplacedVariablesRegex);
+		if (!matches) {
+			return parsedTemplate;
+		}
+
+		const nonReplacedWarnings: TemplateWarning[] = [];
+
+		matches.forEach((match) => {
+			const variableName = match.substring(2, match.length - 1);
+			nonReplacedWarnings.push(new TemplateWarning(`Variable ${variableName} could not be replaced`));
+		});
+
+		return new ParsedTemplate(parsedTemplate.text, parsedTemplate.warnings.concat(nonReplacedWarnings));
 	}
 }
 
 class TemplateWarning {
-	constructor(private readonly message: string) {}
+	constructor(readonly message: string) {}
 }
 
 class ParsedTemplate {
@@ -66,14 +85,27 @@ describe('The Template Engine', () => {
 		expect(parsedTemplate).toBe('This is a template with a foo and bar');
 	});
 
-	it('Parsed template with variables not being foeund', () => {
+	it('Parsed template with variables not being found', () => {
 		const templateText = '${user}';
 		const variables = new Map<string, string>();
 		variables.set('user', 'john');
 		variables.set('age', '35');
 		const aDate = new Date().toString();
 		variables.set('date', aDate);
-		const parsedTemplate = new TemplateEngine(templateText, variables).parseNew().text;
-		expect(parsedTemplate).toBe('john');
+		const parsedTemplate = new TemplateEngine(templateText, variables).parseNew();
+		expect(parsedTemplate.text).toBe('john');
+		expect(parsedTemplate.containsWarnings()).toBe(true);
+		expect(parsedTemplate.warnings[0].message).toBe('Variable age not found');
+		expect(parsedTemplate.warnings[1].message).toBe('Variable date not found');
+	});
+
+	it('Warns about non replaced variables', () => {
+		const templateText = '${user} ${age}';
+		const variables = new Map<string, string>();
+		const parsedTemplate = new TemplateEngine(templateText, variables).parseNew();
+		expect(parsedTemplate.text).toBe('${user} ${age}');
+		expect(parsedTemplate.containsWarnings()).toBe(true);
+		expect(parsedTemplate.warnings[0].message).toBe('Variable user could not be replaced');
+		expect(parsedTemplate.warnings[1].message).toBe('Variable age could not be replaced');
 	});
 });
