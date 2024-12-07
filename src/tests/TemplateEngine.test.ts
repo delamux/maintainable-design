@@ -18,6 +18,11 @@ class TemplateEngine {
 	parseNew(): ParsedTemplate {
 		let parsedText = this.templateText;
 		const warnings: TemplateWarning[] = [];
+		if (this.variables == null) {
+			warnings.push(new TemplateWarning('Variables is not defined'));
+			return ParsedTemplate.create(parsedText, warnings);
+		}
+
 		this.variables.forEach((value, key) => {
 			const variable = `\$\{${key}\}`;
 			if (!parsedText.includes(variable)) {
@@ -26,7 +31,7 @@ class TemplateEngine {
 			parsedText = parsedText.replace(variable, value);
 		});
 
-		const parsedTemplate = new ParsedTemplate(parsedText, warnings);
+		const parsedTemplate = ParsedTemplate.create(parsedText, warnings);
 
 		return this.addWarningsAboutNonReplacedVariables(parsedTemplate);
 	}
@@ -59,6 +64,14 @@ class ParsedTemplate {
 		readonly text: string,
 		readonly warnings: ReadonlyArray<TemplateWarning>
 	) {}
+
+	static create(text: string, warnings: ReadonlyArray<TemplateWarning>): ParsedTemplate {
+		if (text == null) {
+			return new ParsedTemplate('', [new TemplateWarning('Text is not defined')]);
+		}
+
+		return new ParsedTemplate(text, warnings);
+	}
 
 	containsWarnings(): boolean {
 		return this.warnings.length > 0;
@@ -116,5 +129,23 @@ describe('The Template Engine', () => {
 		expect(parsedTemplate.containsWarnings()).toBe(true);
 		expect(parsedTemplate.warnings[0].message).toBe('Variable user could not be replaced');
 		expect(parsedTemplate.warnings[1].message).toBe('Variable age could not be replaced');
+	});
+
+	it('Warns about null variables', () => {
+		const templateText = 'text';
+		const variables = null;
+		const parsedTemplate = new TemplateEngine(templateText, variables).parseNew();
+		expect(parsedTemplate.text).toBe('text');
+		expect(parsedTemplate.containsWarnings()).toBe(true);
+		expect(parsedTemplate.warnings[0].message).toBe('Variables is not defined');
+	});
+
+	it('Warns about null text', () => {
+		const templateText = null;
+		const variables = new Map<string, string>();
+		const parsedTemplate = new TemplateEngine(templateText, variables).parseNew();
+		expect(parsedTemplate.text).toBe('');
+		expect(parsedTemplate.containsWarnings()).toBe(true);
+		expect(parsedTemplate.warnings[0].message).toBe('Text is not defined');
 	});
 });
