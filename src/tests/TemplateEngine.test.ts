@@ -12,12 +12,13 @@ class TemplateEngine {
 	) {}
 
 	parse(): string {
-		let parsedTemplate = this.templateText;
+		let parsedText = this.templateText;
 		this.variables.forEach((value, key) => {
-			parsedTemplate = parsedTemplate.replace('${' + key + '}', value);
+			const regex = `\$\{${key}\}`;
+			parsedText = parsedText.replace(regex, value);
 		});
 
-		return parsedTemplate;
+		return parsedText;
 	}
 }
 
@@ -29,11 +30,20 @@ describe('The Template Engine', () => {
 		expect(parsedTemplate).toBe('This is a template with zero variables');
 	});
 
-	it("should return 'This is a template with a foo' passing one variables", () => {
+	it('parsed text with one variable', () => {
 		const templateText = 'This is a template with a ${variable}';
 		const variables = new Map<string, string>();
 		variables.set('variable', 'foo');
 		const parsedTemplate = new TemplateEngine(templateText, variables).parse();
 		expect(parsedTemplate).toBe('This is a template with a foo');
+	});
+
+	it('parsed text with multiple variables', () => {
+		const templateText = 'This is a template with a ${variable} and ${anotherVariable}';
+		const variables = new Map<string, string>();
+		variables.set('variable', 'foo');
+		variables.set('anotherVariable', 'bar');
+		const parsedTemplate = new TemplateEngine(templateText, variables).parse();
+		expect(parsedTemplate).toBe('This is a template with a foo and bar');
 	});
 });
