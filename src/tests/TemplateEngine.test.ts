@@ -27,6 +27,11 @@ class TemplateEngine {
 		});
 
 		const parsedTemplate = new ParsedTemplate(parsedText, warnings);
+
+		return this.addWarningsAboutNonReplacedVariables(parsedTemplate);
+	}
+
+	private addWarningsAboutNonReplacedVariables(parsedTemplate: ParsedTemplate) {
 		const nonReplacedVariablesRegex = /\$\{[a-zA-Z0-9]+\}/g;
 
 		const matches = parsedTemplate.text.match(nonReplacedVariablesRegex);
@@ -34,14 +39,14 @@ class TemplateEngine {
 			return parsedTemplate;
 		}
 
-		const nonReplacedWarnings: TemplateWarning[] = [];
+		const warnings: TemplateWarning[] = [];
 
 		matches.forEach((match) => {
 			const variableName = match.substring(2, match.length - 1);
-			nonReplacedWarnings.push(new TemplateWarning(`Variable ${variableName} could not be replaced`));
+			warnings.push(new TemplateWarning(`Variable ${variableName} could not be replaced`));
 		});
 
-		return new ParsedTemplate(parsedTemplate.text, parsedTemplate.warnings.concat(nonReplacedWarnings));
+		return parsedTemplate.addWarnings(warnings);
 	}
 }
 
@@ -57,6 +62,10 @@ class ParsedTemplate {
 
 	containsWarnings(): boolean {
 		return this.warnings.length > 0;
+	}
+
+	addWarnings(warnings: TemplateWarning[]): ParsedTemplate {
+		return new ParsedTemplate(this.text, this.warnings.concat(warnings));
 	}
 }
 
