@@ -1,79 +1,102 @@
 class Coordinates {
-	private boundaryLatitude = 10;
-	private boundaryLongitude = 10;
+	private static boundaryLatitude = 10;
+	private static boundaryLongitude = 10;
 	constructor(
-		private latitude: number,
-		private longitude: number
+		private readonly latitude: number,
+		private readonly longitude: number
 	) {}
 
-	increaseLatitude() {
-		this.latitude = this.latitude + 1;
-		if (this.latitude >= this.boundaryLatitude) {
-			this.latitude = this.latitude % this.boundaryLatitude;
+	static create(latitude: number, longitude: number) {
+		if (latitude < 0 || longitude < 0) {
+			throw new Error('Invalid negative coordinates');
 		}
+		if (latitude >= this.boundaryLatitude) {
+			latitude = latitude % this.boundaryLatitude;
+		}
+		if (longitude >= this.boundaryLatitude) {
+			longitude = longitude % this.boundaryLongitude;
+		}
+		if (latitude < 0) {
+			latitude = this.boundaryLatitude - 1;
+		}
+		if (longitude < 0) {
+			longitude = this.boundaryLongitude - 1;
+		}
+
+		return new Coordinates(latitude, longitude);
+	}
+
+	increaseLatitude() {
+		return Coordinates.create(this.latitude + 1, this.longitude);
 	}
 
 	decreaseLatitude() {
-		this.latitude = this.latitude - 1;
-		if (this.latitude < 0) {
-			this.latitude = this.boundaryLatitude - 1;
+		if (this.latitude === 0) {
+			return Coordinates.create(Coordinates.boundaryLatitude - 1, this.longitude);
 		}
+		return Coordinates.create(this.latitude - 1, this.longitude);
 	}
 
 	increaseLongitude() {
-		this.longitude = this.longitude + 1;
-		if (this.longitude >= this.boundaryLatitude) {
-			this.longitude = this.longitude % this.boundaryLatitude;
-		}
+		return Coordinates.create(this.latitude, this.longitude + 1);
 	}
 
 	decreaseLongitude() {
-		this.longitude = this.longitude - 1;
-		if (this.longitude < 0) {
-			this.longitude = this.boundaryLongitude - 1;
+		if (this.longitude === 0) {
+			return Coordinates.create(this.latitude, Coordinates.boundaryLongitude - 1);
 		}
+		return Coordinates.create(this.latitude, this.longitude - 1);
+	}
+
+	toEqual(coordinates: Coordinates) {
+		return this.latitude === coordinates.latitude && this.longitude === coordinates.longitude;
 	}
 }
 
 describe('Coordinates', () => {
-	it('Should return the right increase coordinates', () => {
-		const coordinates = new Coordinates(0, 0);
-		coordinates.increaseLatitude();
-		expect(coordinates).toEqual(new Coordinates(1, 0));
+	it('Should throw an error when creating negative coordinates', () => {
+		expect(() => Coordinates.create(-1, 0)).toThrowError('Invalid negative coordinates');
+		expect(() => Coordinates.create(0, -1)).toThrowError('Invalid negative coordinates');
+	});
+	it('Should return the right increased coordinates', () => {
+		const coordinates = Coordinates.create(0, 0);
+		const newCoordinates = coordinates.increaseLatitude();
+		expect(newCoordinates.toEqual(Coordinates.create(1, 0))).toBe(true);
 	});
 	it('Should return the right decrease coordinates', () => {
-		const coordinates = new Coordinates(8, 0);
-		coordinates.decreaseLatitude();
-		expect(coordinates).toEqual(new Coordinates(7, 0));
+		const coordinates = Coordinates.create(8, 0);
+		const newCoordinates = coordinates.decreaseLatitude();
+		expect(newCoordinates.toEqual(Coordinates.create(7, 0))).toBe(true);
 	});
 	it('Should return the right increase longitude coordinates', () => {
-		const coordinates = new Coordinates(0, 0);
-		coordinates.increaseLongitude();
-		expect(coordinates).toEqual(new Coordinates(0, 1));
+		const coordinates = Coordinates.create(0, 0);
+		const newCoordinates = coordinates.increaseLongitude();
+		expect(newCoordinates.toEqual(Coordinates.create(0, 1))).toBe(true);
 	});
 	it('Should return the right decrease longitude coordinates', () => {
-		const coordinates = new Coordinates(0, 2);
-		coordinates.decreaseLongitude();
-		expect(coordinates).toEqual(new Coordinates(0, 1));
+		const coordinates = Coordinates.create(0, 2);
+		const newCoordinates = coordinates.decreaseLongitude();
+		expect(newCoordinates.toEqual(Coordinates.create(0, 1))).toBe(true);
 	});
 	it('Should return the right increase coordinates when the boundary is reached', () => {
-		const coordinates = new Coordinates(9, 0);
+		const coordinates = Coordinates.create(9, 0);
 		coordinates.increaseLatitude();
-		expect(coordinates).toEqual(new Coordinates(0, 0));
+		const newCoordinates = coordinates.increaseLatitude();
+		expect(newCoordinates.toEqual(Coordinates.create(0, 0))).toBe(true);
 	});
 	it('Should return the right increase longitude coordinates when the boundary is reached', () => {
-		const coordinates = new Coordinates(0, 9);
-		coordinates.increaseLongitude();
-		expect(coordinates).toEqual(new Coordinates(0, 0));
+		const coordinates = Coordinates.create(0, 9);
+		const newCoordinates = coordinates.increaseLongitude();
+		expect(newCoordinates.toEqual(Coordinates.create(0, 0))).toBe(true);
 	});
-	it('Should return the right decrease coordinates when latitude is 0', () => {
-		const coordinates = new Coordinates(0, 0);
-		coordinates.decreaseLatitude();
-		expect(coordinates).toEqual(new Coordinates(9, 0));
+	it('Should return the right decreased latitude when latitude is 0', () => {
+		const coordinates = Coordinates.create(0, 0);
+		const newCoordinates = coordinates.decreaseLatitude();
+		expect(newCoordinates.toEqual(Coordinates.create(9, 0))).toBe(true);
 	});
 	it('Should return the right decrease coordinates when longitude is 0', () => {
-		const coordinates = new Coordinates(0, 0);
-		coordinates.decreaseLongitude();
-		expect(coordinates).toEqual(new Coordinates(0, 9));
+		const coordinates = Coordinates.create(0, 0);
+		const newCoordinate = coordinates.decreaseLongitude();
+		expect(newCoordinate.toEqual(Coordinates.create(0, 9))).toBe(true);
 	});
 });
