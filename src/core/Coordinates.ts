@@ -52,4 +52,8 @@ export class Coordinates {
 	toEqual(coordinates: Coordinates) {
 		return this.latitude === coordinates.latitude && this.longitude === coordinates.longitude;
 	}
+
+	toString(): string {
+		return `${this.latitude}:${this.longitude}`;
+	}
 }
